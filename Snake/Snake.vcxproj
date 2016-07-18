@@ -151,6 +151,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Meshboard.h" />
     <ClInclude Include="Scoreboard.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="Snake.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -162,6 +163,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Meshboard.cpp" />
     <ClCompile Include="Scoreboard.cpp" />
+    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Snake.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

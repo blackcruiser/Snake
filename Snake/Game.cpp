@@ -36,28 +36,42 @@ int Game::Initialize()
 		return -1;
 	}
 
+	/* Make the window's context current */
+	glfwMakeContextCurrent(mp_window);
+
 	glfwSetKeyCallback(mp_window, KeyCallback);
+
+	/*Init glew after setting context*/
+	if (glewInit() != GLEW_OK)
+	{
+		std::cout << "Failed to initialize GLEW" << std::endl;
+		return -1;
+	}
+	glViewport(0, 0, 640, 480);
 
 	mp_food = new Food(4, 4);
 	mp_snake = new Snake(1, 4, 4, 1);
 	mp_meshboard = new Meshboard(640, 480, 4, 4);
+
+	mp_shader = new Shader(".\\vertexShader.txt", ".\\fragmentShader.txt");
 
 	return 0;
 }
 
 void Game::Start()
 {
-	/* Make the window's context current */
-	glfwMakeContextCurrent(mp_window);
+	mp_shader->Use();
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(mp_window))
 	{
+		glfwPollEvents();
+
 		/* Render here */
 		Render();
 
 		/* Poll for and process events */
-		glfwPollEvents();
+		glfwSwapBuffers(mp_window);
 	}
 }
 
@@ -108,6 +122,7 @@ void Game::TimerCallback()
 
 void Game::Render()
 {
+	
 	mp_meshboard->Render();
 	mp_snake->Render();
 	mp_food->Render();

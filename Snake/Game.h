@@ -14,6 +14,7 @@ enum GAME_MESSAGE
 #include <list>
 //#include <queue>
 
+#include "Shader.h"
 #include "BaseModule.h"
 #include "Food.h"
 #include "Snake.h"
@@ -23,6 +24,8 @@ class Game : BaseModule
 {
 private:
 	static Game *mp_instance;
+
+	Shader *mp_shader;
 
 	GLFWwindow *mp_window;
 	//std::list<BaseModule *> m_moduleList;
