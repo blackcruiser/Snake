@@ -35,6 +35,8 @@ private:
 
 	std::list<int> m_messageQueue;
 
+	int m_width, m_height;
+
 private:
 	Game();
 
@@ -43,7 +45,7 @@ public:
 	~Game();
 
 	int Initialize();
-	void Start();
+	void Run();
 	void Terminate();
 
 	static void KeyCallback(GLFWwindow* window, int key, 

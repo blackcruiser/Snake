@@ -24,55 +24,81 @@ Game* Game::GetInstance()
 
 int Game::Initialize()
 {
-	/* Initialize the library */
+	int err;
+
 	if (!glfwInit())
 		return -1;
 
-	/* Create a windowed mode window and its OpenGL context */
 	mp_window = glfwCreateWindow(640, 480, "SNAKE GAME", NULL, NULL);
 	if (!mp_window)
 	{
 		glfwTerminate();
 		return -1;
 	}
-
-	/* Make the window's context current */
 	glfwMakeContextCurrent(mp_window);
 
 	glfwSetKeyCallback(mp_window, KeyCallback);
 
-	/*Init glew after setting context*/
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "Failed to initialize GLEW" << std::endl;
 		return -1;
 	}
-	glViewport(0, 0, 640, 480);
 
-	mp_food = new Food(4, 4);
-	mp_snake = new Snake(1, 4, 4, 1);
-	mp_meshboard = new Meshboard(640, 480, 4, 4);
+	glfwGetFramebufferSize(mp_window, &m_width, &m_height);
+	glViewport(0, 0, m_width, m_height);
+
+	err = glGetError();
+
+	mp_food = new Food(8, 8);
+	mp_snake = new Snake(8, 8, 1, 1);
+	mp_meshboard = new Meshboard(8, 8);
 
 	mp_shader = new Shader(".\\vertexShader.txt", ".\\fragmentShader.txt");
 
 	return 0;
 }
 
-void Game::Start()
+void Game::Run()
 {
-	mp_shader->Use();
+	uint64_t curTime, lastTime;
 
+	mp_meshboard->WillRender();
+
+	mp_food->WillRender();
+	mp_food->Reset();
+
+	mp_snake->WillRender();
+	mp_snake->Reset();
+
+	lastTime = 0;
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(mp_window))
 	{
+		curTime = glfwGetTimerValue();
+		if (curTime - lastTime >= glfwGetTimerFrequency())
+		{
+			onTimeout();
+		}
+		lastTime = curTime;
+
 		glfwPollEvents();
 
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		mp_shader->Use();
 		/* Render here */
 		Render();
 
 		/* Poll for and process events */
 		glfwSwapBuffers(mp_window);
 	}
+
+	mp_snake->DidRender();
+	mp_food->DidRender();
+	mp_meshboard->DidRender();
+	
 }
 
 void Game::Terminate()
@@ -122,10 +148,9 @@ void Game::TimerCallback()
 
 void Game::Render()
 {
-	
 	mp_meshboard->Render();
-	mp_snake->Render();
 	mp_food->Render();
+	mp_snake->Render();
 }
 
 void Game::onKeyDown(int key)
@@ -135,4 +160,5 @@ void Game::onKeyDown(int key)
 
 void Game::onTimeout()
 {
+	mp_snake->onTimeout();
 }

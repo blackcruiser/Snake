@@ -2,9 +2,12 @@
 #include "Food.h"
 
 
-Food::Food(int rows, int cols, int colInterval, int rowInterval):
-	m_cols(cols), m_rows(rows), m_col(-1), m_row(-1), m_colInterval(colInterval), m_rowInterval(rowInterval)
+Food::Food(int rows, int cols):
+	m_cols(cols), m_rows(rows), m_col(0), m_row(0), 
+	m_colDistribution(0, cols), m_rowDistribution(0, rows)
 {
+	m_colSpacing = 2.0f / cols;
+	m_rowSpacing = 2.0f / rows;
 }
 
 
@@ -16,30 +19,62 @@ void Food::Reset()
 {
 	m_row = m_rowDistribution(m_randomEngine);
 	m_col = m_colDistribution(m_randomEngine);
+
+	m_vertexPtArr[0] = (m_col + 0.25) * m_colSpacing;
+	m_vertexPtArr[1] = (m_row + 0.25)* m_rowSpacing;
+	m_vertexPtArr[2] = (m_col + 0.75) * m_colSpacing;
+	m_vertexPtArr[3] = (m_row + 0.25) * m_rowSpacing;
+	m_vertexPtArr[4] = (m_col + 0.25) * m_colSpacing;
+	m_vertexPtArr[5] = (m_row + 0.75) * m_rowSpacing;
+	m_vertexPtArr[6] = (m_col + 0.75) * m_colSpacing;
+	m_vertexPtArr[7] = (m_row + 0.75) * m_rowSpacing;
+
+	for (int i = 0; i < 8; i++)
+		m_vertexPtArr[i] -= 1.0f;
+}
+
+void Food::WillRender()
+{
+	int err;
+
+	glGenVertexArrays(1, &m_glVertexArr);
+	glGenBuffers(1, &m_glVertexBuf);
+	glGenBuffers(1, &m_glVertexIdx);
+
+	glBindVertexArray(m_glVertexArr);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(m_vertexIdxArr), m_vertexIdxArr, GL_STATIC_DRAW);
+	err = glGetError();
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid *)0);
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void Food::DidRender()
+{
+	glDeleteVertexArrays(1, &m_glVertexArr);
+	glDeleteBuffers(1, &m_glVertexBuf);
+	glDeleteBuffers(1, &m_glVertexIdx);
 }
 
 void Food::Render()
 {
-	GLuint glVertexBuffer;
-	GLuint glVertexArray;
+	glBindVertexArray(m_glVertexArr);
 
-	glGenVertexArrays(0, &glVertexArray);
-	glGenBuffers(0, &glVertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertexPtArr), m_vertexPtArr, GL_DYNAMIC_DRAW);
 
-	glBindVertexArray(glVertexArray);
-	glBindBuffer(GL_ARRAY_BUFFER, glVertexBuffer);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-	vertexPoint[0] = (m_row - 1) * m_rowInterval;
-	vertexPoint[1] = (m_col - 1) * m_colInterval;
-	vertexPoint[2] = (m_row - 1) * m_rowInterval;
-	vertexPoint[3] = (m_col) * m_colInterval;
-	vertexPoint[4] = (m_row) * m_rowInterval;
-	vertexPoint[5] = (m_col - 1) * m_colInterval;
-	vertexPoint[6] = (m_row) * m_rowInterval;
-	vertexPoint[7] = (m_col) * m_colInterval;
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexPoint), vertexPoint, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid *)0);
-	glEnableVertexAttribArray(0);
+	int err = glGetError();
 }
