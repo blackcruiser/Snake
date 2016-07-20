@@ -4,7 +4,7 @@
 
 Food::Food(int rows, int cols):
 	m_cols(cols), m_rows(rows), m_col(0), m_row(0), 
-	m_colDistribution(0, cols), m_rowDistribution(0, rows)
+	m_colDistribution(0, cols - 1), m_rowDistribution(0, rows - 1)
 {
 	m_colSpacing = 2.0f / cols;
 	m_rowSpacing = 2.0f / rows;
@@ -13,6 +13,16 @@ Food::Food(int rows, int cols):
 
 Food::~Food()
 {
+}
+
+int Food::Row()
+{
+	return m_row;
+}
+
+int Food::Col()
+{
+	return m_col;
 }
 
 void Food::Reset()
@@ -48,6 +58,7 @@ void Food::WillRender()
 	err = glGetError();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8, 0, GL_DYNAMIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid *)0);
 	glEnableVertexAttribArray(0);
@@ -69,12 +80,12 @@ void Food::Render()
 	glBindVertexArray(m_glVertexArr);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertexPtArr), m_vertexPtArr, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 8, m_vertexPtArr);
+	int err = glGetError();
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	int err = glGetError();
 }

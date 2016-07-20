@@ -50,9 +50,9 @@ int Game::Initialize()
 
 	err = glGetError();
 
-	mp_food = new Food(8, 8);
-	mp_snake = new Snake(8, 8, 1, 1);
-	mp_meshboard = new Meshboard(8, 8);
+	mp_food = new Food(16, 16);
+	mp_snake = new Snake(16, 16, 0);
+	mp_meshboard = new Meshboard(16, 16);
 
 	mp_shader = new Shader(".\\vertexShader.txt", ".\\fragmentShader.txt");
 
@@ -61,7 +61,7 @@ int Game::Initialize()
 
 void Game::Run()
 {
-	uint64_t curTime, lastTime;
+	uint64_t curTime, lastTime, timeLimit;
 
 	mp_meshboard->WillRender();
 
@@ -71,23 +71,43 @@ void Game::Run()
 	mp_snake->WillRender();
 	mp_snake->Reset();
 
+	mp_shader->Use();
+
 	lastTime = 0;
+	timeLimit = glfwGetTimerFrequency() / 4;
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(mp_window))
 	{
+		//Process events
 		curTime = glfwGetTimerValue();
-		if (curTime - lastTime >= glfwGetTimerFrequency())
+		if (curTime - lastTime >= timeLimit)
 		{
+			lastTime = curTime;
 			onTimeout();
 		}
-		lastTime = curTime;
-
 		glfwPollEvents();
+
+
+		//Game logic
+		if (true == mp_snake->CheckCollision())
+		{
+			glfwSetWindowShouldClose(mp_window, GLFW_TRUE);
+		};
+
+		if (true == mp_snake->CheckInbound(mp_food->Col(), mp_food->Row()))
+		{
+			mp_snake->InsertBlock();
+			while (true == mp_snake->CheckInbound(mp_food->Col(), mp_food->Row()))
+			{
+				mp_food->Reset();
+			}
+		}
+
+		//Render
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		mp_shader->Use();
 		/* Render here */
 		Render();
 

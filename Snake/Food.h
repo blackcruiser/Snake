@@ -22,6 +22,9 @@ public:
 	Food(int rows, int cols);
 	~Food();
 
+	int Row();
+	int Col();
+	
 	void Reset();
 
 	void WillRender();
