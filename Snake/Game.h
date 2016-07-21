@@ -12,7 +12,6 @@ enum GAME_MESSAGE
 };
 
 #include <list>
-//#include <queue>
 
 #include "Shader.h"
 #include "BaseModule.h"
@@ -26,14 +25,11 @@ private:
 	static Game *mp_instance;
 
 	Shader *mp_shader;
-
 	GLFWwindow *mp_window;
-	//std::list<BaseModule *> m_moduleList;
+
 	Snake *mp_snake;
 	Food *mp_food;
 	Meshboard *mp_meshboard;
-
-	std::list<int> m_messageQueue;
 
 	int m_width, m_height;
 
@@ -48,15 +44,14 @@ public:
 	void Run();
 	void Terminate();
 
+
+	void WillRender();
+	virtual void Render();
+	void DidRender();
+
+
 	static void KeyCallback(GLFWwindow* window, int key, 
 		int scancode, int action, int mods);
-	static void TimerCallback();
-
-
-	void sendMessage(int message);
-	void dispatchMessage();
-	virtual void ProcessMessage(int message);
-	virtual void Render();
 	virtual void onKeyDown(int key);
 	virtual void onTimeout();
 };

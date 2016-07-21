@@ -24,8 +24,6 @@ Game* Game::GetInstance()
 
 int Game::Initialize()
 {
-	int err;
-
 	if (!glfwInit())
 		return -1;
 
@@ -37,24 +35,19 @@ int Game::Initialize()
 	}
 	glfwMakeContextCurrent(mp_window);
 
-	glfwSetKeyCallback(mp_window, KeyCallback);
-
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "Failed to initialize GLEW" << std::endl;
 		return -1;
 	}
 
-	glfwGetFramebufferSize(mp_window, &m_width, &m_height);
-	glViewport(0, 0, m_width, m_height);
-
-	err = glGetError();
+	glfwSetKeyCallback(mp_window, KeyCallback);
 
 	mp_food = new Food(16, 16);
 	mp_snake = new Snake(16, 16, 0);
 	mp_meshboard = new Meshboard(16, 16);
 
-	mp_shader = new Shader(".\\vertexShader.txt", ".\\fragmentShader.txt");
+	mp_shader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
 
 	return 0;
 }
@@ -63,15 +56,7 @@ void Game::Run()
 {
 	uint64_t curTime, lastTime, timeLimit;
 
-	mp_meshboard->WillRender();
-
-	mp_food->WillRender();
-	mp_food->Reset();
-
-	mp_snake->WillRender();
-	mp_snake->Reset();
-
-	mp_shader->Use();
+	WillRender();
 
 	lastTime = 0;
 	timeLimit = glfwGetTimerFrequency() / 4;
@@ -86,7 +71,6 @@ void Game::Run()
 			onTimeout();
 		}
 		glfwPollEvents();
-
 
 		//Game logic
 		if (true == mp_snake->CheckCollision())
@@ -104,21 +88,10 @@ void Game::Run()
 		}
 
 		//Render
-
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		/* Render here */
 		Render();
-
-		/* Poll for and process events */
-		glfwSwapBuffers(mp_window);
 	}
 
-	mp_snake->DidRender();
-	mp_food->DidRender();
-	mp_meshboard->DidRender();
-	
+	DidRender();
 }
 
 void Game::Terminate()
@@ -130,26 +103,39 @@ void Game::Terminate()
 }
 
 
-void Game::sendMessage(int message)
+void Game::WillRender()
 {
-	m_messageQueue.push_back(message);
+	glfwGetFramebufferSize(mp_window, &m_width, &m_height);
+	glViewport(0, 0, m_width, m_height);
+
+	mp_meshboard->WillRender();
+
+	mp_food->WillRender();
+	mp_food->Reset();
+
+	mp_snake->WillRender();
+	mp_snake->Reset();
 }
 
-void Game::dispatchMessage()
+void Game::Render()
 {
-	for (auto it_message = m_messageQueue.begin(); it_message != m_messageQueue.end(); it_message++)
-	{
-		int message = *it_message;
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-		if (MSG_GAME_1 <= message && message <= MSG_GAME_2)
-			ProcessMessage(message);
-		else if (MSG_SNAKE_1 <= message && message <= MSG_SNAKE_2)
-			mp_snake->ProcessMessage(message);
-	}
+	mp_shader->Use();
+
+	mp_meshboard->Render();
+	mp_food->Render();
+	mp_snake->Render();
+
+	glfwSwapBuffers(mp_window);
 }
 
-void Game::ProcessMessage(int message)
+void Game::DidRender()
 {
+	mp_snake->DidRender();
+	mp_food->DidRender();
+	mp_meshboard->DidRender();
 }
 
 
@@ -159,18 +145,6 @@ void Game::KeyCallback(GLFWwindow* window, int key, int scancode, int action, in
 	{
 		mp_instance->onKeyDown(key);
 	}
-}
-
-void Game::TimerCallback()
-{
-
-}
-
-void Game::Render()
-{
-	mp_meshboard->Render();
-	mp_food->Render();
-	mp_snake->Render();
 }
 
 void Game::onKeyDown(int key)

@@ -11,11 +11,15 @@ BaseModule::~BaseModule()
 {
 }
 
+void BaseModule::WillRender()
+{
+}
+
 void BaseModule::Render()
 {
 }
 
-void BaseModule::ProcessMessage(int message)
+void BaseModule::DidRender()
 {
 }
 
@@ -26,5 +30,4 @@ void BaseModule::onKeyDown(int key)
 
 void BaseModule::onTimeout()
 {
-
 }
