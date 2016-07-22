@@ -18,6 +18,7 @@ enum GAME_MESSAGE
 #include "Food.h"
 #include "Snake.h"
 #include "Meshboard.h"
+#include "Scoreboard.h"
 
 class Game : BaseModule
 {
@@ -30,6 +31,7 @@ private:
 	Snake *mp_snake;
 	Food *mp_food;
 	Meshboard *mp_meshboard;
+	Scoreboard *mp_scoreboard;
 
 	int m_width, m_height;
 

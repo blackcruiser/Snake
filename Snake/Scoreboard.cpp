@@ -7,27 +7,82 @@
 #include <iostream>
 
 
-Scoreboard::Scoreboard()
+Scoreboard::Scoreboard(int cols, int rows) :
+	m_cols(cols), m_rows(rows), m_x(0.0f), m_y(0.0f), m_scale(1.0f),
+	m_glmTextColor(0.5f, 0.8f, 0.2f)
 {
+	mp_shader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
 }
 
 Scoreboard::~Scoreboard()
 {
 }
 
+void Scoreboard::LoadCharacters()
+{
+	FT_Library ft;
+	FT_Face face;
+
+	this->characters.clear();
+
+	if (FT_Init_FreeType(&ft))
+		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+	if (FT_New_Face(ft, "./fonts/arial.ttf", 0, &face))
+		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+
+	FT_Set_Pixel_Sizes(face, 0, 48);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	for (GLubyte c = 0; c < 128; c++)
+	{
+		GLuint texture;
+		Character character;
+
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+		{
+			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			continue;
+		}
+
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+			face->glyph->bitmap.width, face->glyph->bitmap.rows,
+			0, GL_RED, GL_UNSIGNED_BYTE,
+			face->glyph->bitmap.buffer
+		);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		character = {
+			texture,
+			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+			static_cast<GLuint>(face->glyph->advance.x),
+		};
+		characters.insert(std::pair<GLchar, Character>(c, character));
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+}
+
 void Scoreboard::WillRender()
 {
-	GLuint glProjLoc, glTextLoc;
-	glm::mat4 glmProjMat;
-	
-	mp_shader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
+	LoadCharacters();
 
-	glProjLoc = glGetUniformLocation(mp_shader->program, "projection");
-	glmProjMat = glm::ortho(0.0f, static_cast<GLfloat>(width), static_cast<GLfloat>(height), 0.0f);
-	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glTextLoc = glGetUniformLocation(mp_shader->program, "text");
-	glUniform1i(glTextLoc, 0);
+	m_glProjLoc = glGetUniformLocation(mp_shader->program, "projection");
+	m_glColorLoc = glGetUniformLocation(mp_shader->program, "textColor");
+
+	m_glmProjMat = glm::ortho(0.0f, static_cast<GLfloat>(800),
+		0.0f, static_cast<GLfloat>(600));
 
 	// Configure VAO/VBO for texture quads
 	glGenVertexArrays(1, &m_glVtxArr);
@@ -42,118 +97,69 @@ void Scoreboard::WillRender()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-
-
-	FT_Library ft;
-	FT_Face face;
-	
-	// First clear the previously loaded Characters
-	this->Characters.clear();
-	// Then initialize and load the FreeType library
-	if (FT_Init_FreeType(&ft)) // All functions return a value different than 0 whenever an error occurred
-		std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-	// Load font as face
-	if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face))
-		std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
-	// Set size to load glyphs as
-	FT_Set_Pixel_Sizes(face, 0, 48);
-	// Disable byte-alignment restriction
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	// Then for the first 128 ASCII characters, pre-load/compile their characters and store them
-	for (GLubyte c = 0; c < 128; c++) // lol see what I did there 
-	{
-		// Load character glyph 
-		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
-		{
-			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
-			continue;
-		}
-		// Generate texture
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RED,
-			face->glyph->bitmap.width,
-			face->glyph->bitmap.rows,
-			0,
-			GL_RED,
-			GL_UNSIGNED_BYTE,
-			face->glyph->bitmap.buffer
-		);
-		// Set texture options
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		// Now store character for later use
-		Character character = {
-			texture,
-			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			face->glyph->advance.x
-		};
-		Characters.insert(std::pair<GLchar, Character>(c, character));
-	}
-	glBindTexture(GL_TEXTURE_2D, 0);
-	// Destroy FreeType once we're finished
-	FT_Done_Face(face);
-	FT_Done_FreeType(ft);
-
+	int err = glGetError();
 }
 
 void Scoreboard::DidRender()
 {
-
+	for (auto iter_character = characters.begin(); iter_character != characters.end(); iter_character++)
+	{
+		glDeleteTextures(1, &iter_character->second.textureID);
+	}
 }
 
 void Scoreboard::Render()
 {
-	std::string text("xxxx");
+	std::string text("This is sample text");
+	GLfloat  baseX, baseY;
 
 	mp_shader->Use();
 
-	this->TextShader.SetVector3f("textColor", color);
+	// Set OpenGL options
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glUniformMatrix4fv(m_glProjLoc, 1, GL_FALSE, glm::value_ptr(m_glmProjMat));
+	glUniform3f(m_glColorLoc, m_glmTextColor.x, m_glmTextColor.y, m_glmTextColor.z);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(m_glVtxArr);
 
-	// Iterate through all characters
-	std::string::const_iterator c;
-	for (c = text.begin(); c != text.end(); c++)
+	baseX = m_x;
+	baseY = m_y;
+	for (auto c = text.begin(); c != text.end(); c++)
 	{
-		Character ch = Characters[*c];
+		GLfloat x, y, w, h;
+		Character ch;
 
-		GLfloat xpos = x + ch.Bearing.x * scale;
-		GLfloat ypos = y + (this->Characters['H'].Bearing.y - ch.Bearing.y) * scale;
+		ch = characters[*c];
 
-		GLfloat w = ch.Size.x * scale;
-		GLfloat h = ch.Size.y * scale;
-		// Update VBO for each character
+		x = baseX + ch.bearing.x * m_scale;
+		y = baseY - (ch.size.y - ch.bearing.y) * m_scale;
+		w = ch.size.x * m_scale;
+		h = ch.size.y * m_scale;
+
 		GLfloat vertices[6][4] = {
-			{ xpos,     ypos + h,   0.0, 1.0 },
-			{ xpos + w, ypos,       1.0, 0.0 },
-			{ xpos,     ypos,       0.0, 0.0 },
+			{ x,     y + h,   0.0, 0.0 },
+			{ x,	 y,       0.0, 1.0 },
+			{ x + w, y,       1.0, 1.0 },
 
-			{ xpos,     ypos + h,   0.0, 1.0 },
-			{ xpos + w, ypos + h,   1.0, 1.0 },
-			{ xpos + w, ypos,       1.0, 0.0 }
+			{ x,     y + h,   0.0, 0.0 },
+			{ x + w, y,		  1.0, 1.0 },
+			{ x + w, y + h,   1.0, 0.0 }
 		};
-		// Render glyph texture over quad
-		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-		// Update content of VBO memory
-		glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+
+		glBindTexture(GL_TEXTURE_2D, ch.textureID);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVtxArr);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // Be sure to use glBufferSubData and not glBufferData
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		// Render quad
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		// Now advance cursors for next glyph
-		x += (ch.Advance >> 6) * scale; // Bitshift by 6 to get value in pixels (1/64th times 2^6 = 64)
+		baseX += (ch.advance >> 6) * m_scale; // Bitshift by 6 to get value in pixels (1/64th times 2^6 = 64)
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	glBindVertexArray(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//glDisable(GL_BLEND);
 }

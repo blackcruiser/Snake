@@ -206,22 +206,18 @@ void Snake::UpdateScene()
 
 void Snake::WillRender()
 {
-	int err;
-
 	mp_vertexPtArr = new float[m_cols * m_rows * 4 * 2];
 	mp_vertexIdxArr = new int[m_cols * m_rows * 6];
 
 	glGenVertexArrays(1, &m_glVertexArr);
 	glGenBuffers(1, &m_glVertexBuf);
 	glGenBuffers(1, &m_glVertexIdx);
-	err = glGetError();
 
 	glBindVertexArray(m_glVertexArr);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_rows * m_cols * 8,
 		0, GL_DYNAMIC_DRAW);
-	err = glGetError();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * m_rows * m_cols * 6,
@@ -230,18 +226,14 @@ void Snake::WillRender()
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid *)0);
 	glEnableVertexAttribArray(0);
-	err = glGetError();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	err = glGetError();
 }
 
 void Snake::DidRender()
 {
-	int err;
-
 	glDeleteVertexArrays(1, &m_glVertexArr);
 	glDeleteBuffers(1, &m_glVertexIdx);
 	glDeleteBuffers(1, &m_glVertexBuf);
@@ -252,28 +244,22 @@ void Snake::DidRender()
 
 void Snake::Render()
 {
-	int err;
-
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glBindVertexArray(m_glVertexArr);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * m_points.size() * 8, mp_vertexPtArr);
-	err = glGetError();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(int) * m_points.size() * 6, mp_vertexIdxArr);
-	err = glGetError();
 
 	glDrawElements(GL_TRIANGLES, m_points.size() * 6, GL_UNSIGNED_INT, 0);
-	err = glGetError();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
-	err = glGetError();
 }
 
 void Snake::onKeyDown(int key)

@@ -43,11 +43,14 @@ int Game::Initialize()
 
 	glfwSetKeyCallback(mp_window, KeyCallback);
 
+	mp_shader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
+
 	mp_food = new Food(16, 16);
 	mp_snake = new Snake(16, 16, 0);
 	mp_meshboard = new Meshboard(16, 16);
 
-	mp_shader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
+	mp_scoreboard = new Scoreboard(640, 480);
+
 
 	return 0;
 }
@@ -68,11 +71,12 @@ void Game::Run()
 		if (curTime - lastTime >= timeLimit)
 		{
 			lastTime = curTime;
-			onTimeout();
+			//onTimeout();
 		}
 		glfwPollEvents();
 
 		//Game logic
+		/*
 		if (true == mp_snake->CheckCollision())
 		{
 			glfwSetWindowShouldClose(mp_window, GLFW_TRUE);
@@ -86,6 +90,7 @@ void Game::Run()
 				mp_food->Reset();
 			}
 		}
+		*/
 
 		//Render
 		Render();
@@ -108,13 +113,20 @@ void Game::WillRender()
 	glfwGetFramebufferSize(mp_window, &m_width, &m_height);
 	glViewport(0, 0, m_width, m_height);
 
-	mp_meshboard->WillRender();
+	//mp_meshboard->WillRender();
 
-	mp_food->WillRender();
-	mp_food->Reset();
+	//mp_food->WillRender();
 
+	/*
 	mp_snake->WillRender();
+	*/
+
+	mp_scoreboard->WillRender();
+
+	//mp_food->Reset();
+	/*
 	mp_snake->Reset();
+	*/
 }
 
 void Game::Render()
@@ -122,11 +134,13 @@ void Game::Render()
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	mp_shader->Use();
+	//mp_shader->Use();
 
-	mp_meshboard->Render();
-	mp_food->Render();
-	mp_snake->Render();
+	//mp_meshboard->Render();
+	//mp_food->Render();
+	//mp_snake->Render();
+
+	mp_scoreboard->Render();
 
 	glfwSwapBuffers(mp_window);
 }
@@ -136,6 +150,7 @@ void Game::DidRender()
 	mp_snake->DidRender();
 	mp_food->DidRender();
 	mp_meshboard->DidRender();
+	mp_scoreboard->DidRender();
 }
 
 

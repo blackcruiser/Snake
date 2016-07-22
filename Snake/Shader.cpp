@@ -61,15 +61,15 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 
 
 	// 着色器程序
-	this->Program = glCreateProgram();
-	glAttachShader(this->Program, vertexShader);
-	glAttachShader(this->Program, fragmentShader);
-	glLinkProgram(this->Program);
+	this->program = glCreateProgram();
+	glAttachShader(this->program, vertexShader);
+	glAttachShader(this->program, fragmentShader);
+	glLinkProgram(this->program);
 	// 打印连接错误（如果有的话）
-	glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
+	glGetProgramiv(this->program, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
+		glGetProgramInfoLog(this->program, 512, NULL, infoLog);
 		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
 	}
 
@@ -81,5 +81,5 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 
 void Shader::Use()
 {
-	glUseProgram(this->Program);
+	glUseProgram(this->program);
 }
