@@ -1,22 +1,17 @@
 #include "stdafx.h"
 #include "Scoreboard.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <iostream>
 
 
-Scoreboard::Scoreboard(int cols, int rows) :
-	m_cols(cols), m_rows(rows), m_x(0.0f), m_y(0.0f), m_scale(1.0f),
-	m_glmTextColor(0.5f, 0.8f, 0.2f)
-{
-	mp_shader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
-}
+Scoreboard::Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader) :
+	m_cols(cols), m_rows(rows), m_scale(1.0f),
+	m_glmTextColor(0.5f, 0.8f, 0.2f), m_renderRegion(renderRegion),
+	m_pSceneShader(pSceneShader), m_pTextShader(pTextShader)
+{}
 
 Scoreboard::~Scoreboard()
-{
-}
+{}
 
 void Scoreboard::LoadCharacters()
 {
@@ -75,29 +70,26 @@ void Scoreboard::WillRender()
 {
 	LoadCharacters();
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	m_glProjLoc = glGetUniformLocation(mp_shader->program, "projection");
-	m_glColorLoc = glGetUniformLocation(mp_shader->program, "textColor");
-
-	m_glmProjMat = glm::ortho(0.0f, static_cast<GLfloat>(800),
-		0.0f, static_cast<GLfloat>(600));
+	m_glColorLoc = glGetUniformLocation(m_pTextShader->program, "textColor");
+	GL_PRINT_ERROR;
 
 	// Configure VAO/VBO for texture quads
 	glGenVertexArrays(1, &m_glVtxArr);
 	glBindVertexArray(m_glVtxArr);
+	GL_PRINT_ERROR;
 
 	glGenBuffers(1, &m_glVtxBuf);
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVtxBuf);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+	GL_PRINT_ERROR;
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
-	int err = glGetError();
+	GL_PRINT_ERROR;
 }
 
 void Scoreboard::DidRender()
@@ -113,20 +105,21 @@ void Scoreboard::Render()
 	std::string text("This is sample text");
 	GLfloat  baseX, baseY;
 
-	mp_shader->Use();
+	m_pTextShader->Use();
 
 	// Set OpenGL options
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUniformMatrix4fv(m_glProjLoc, 1, GL_FALSE, glm::value_ptr(m_glmProjMat));
 	glUniform3f(m_glColorLoc, m_glmTextColor.x, m_glmTextColor.y, m_glmTextColor.z);
+	GL_PRINT_ERROR; 
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(m_glVtxArr);
+	GL_PRINT_ERROR;
 
-	baseX = m_x;
-	baseY = m_y;
+	baseX = m_renderRegion.x;
+	baseY = m_renderRegion.y;
 	for (auto c = text.begin(); c != text.end(); c++)
 	{
 		GLfloat x, y, w, h;
@@ -150,16 +143,19 @@ void Scoreboard::Render()
 		};
 
 		glBindTexture(GL_TEXTURE_2D, ch.textureID);
-		glBindBuffer(GL_ARRAY_BUFFER, m_glVtxArr);
+		glBindBuffer(GL_ARRAY_BUFFER, m_glVtxBuf);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // Be sure to use glBufferSubData and not glBufferData
+		GL_PRINT_ERROR;
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		baseX += (ch.advance >> 6) * m_scale; // Bitshift by 6 to get value in pixels (1/64th times 2^6 = 64)
+		GL_PRINT_ERROR;
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_PRINT_ERROR;
 	}
 	glBindVertexArray(0);
 
-	//glDisable(GL_BLEND);
+	glDisable(GL_BLEND);
 }

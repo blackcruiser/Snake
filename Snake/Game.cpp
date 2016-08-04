@@ -1,39 +1,46 @@
 #include "stdafx.h"
 #include "Game.h"
+#include "Shader.h"
 
-Game *Game::mp_instance = NULL;
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
+
+Game *Game::m_pInstance = NULL;
 
 Game::Game() :
-	mp_window(NULL)
-{
-	mp_instance = this;
-}
-
+	m_pWindow(NULL), m_pFood(NULL), m_pSnake(NULL), 
+	m_pMeshboard(NULL), m_pScoreboard(NULL)
+{}
 
 Game::~Game()
 {
-	mp_instance = NULL;
+	m_pInstance = NULL;
 }
 
 Game* Game::GetInstance()
 {
-	if (NULL == mp_instance)
-		new Game;
-	return mp_instance;
+	if (NULL == m_pInstance)
+		m_pInstance = new Game;
+	return m_pInstance;
 }
 
 int Game::Initialize()
 {
+	m_width = 640.00f;
+	m_height = 600.00f;
+
 	if (!glfwInit())
 		return -1;
 
-	mp_window = glfwCreateWindow(640, 480, "SNAKE GAME", NULL, NULL);
-	if (!mp_window)
+	m_pWindow = glfwCreateWindow(m_width, m_height, "SNAKE GAME", NULL, NULL);
+	if (!m_pWindow)
 	{
 		glfwTerminate();
 		return -1;
 	}
-	glfwMakeContextCurrent(mp_window);
+	glfwMakeContextCurrent(m_pWindow);
 
 	if (glewInit() != GLEW_OK)
 	{
@@ -41,16 +48,24 @@ int Game::Initialize()
 		return -1;
 	}
 
-	glfwSetKeyCallback(mp_window, KeyCallback);
+	glfwSetKeyCallback(m_pWindow, KeyCallback);
 
-	mp_shader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
+	Rectf partRegion, fullRegion= { 0, 0, 
+		static_cast<float>(m_width), static_cast<float>(m_height)  };
 
-	mp_food = new Food(16, 16);
-	mp_snake = new Snake(16, 16, 0);
-	mp_meshboard = new Meshboard(16, 16);
+	m_pSceneShader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
+	m_pTextShader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
 
-	mp_scoreboard = new Scoreboard(640, 480);
+	partRegion = fullRegion;
+	partRegion.height *= 0.80f;
+	m_pFood = new Food(partRegion, 16, 16, m_pSceneShader);
+	m_pSnake = new Snake(partRegion, 16, 16, 0, m_pSceneShader);
+	m_pMeshboard = new Meshboard(partRegion, 16, 16, m_pSceneShader);
 
+	partRegion = fullRegion;
+	partRegion.y = fullRegion.height * 0.80f;
+	partRegion.height *= fullRegion.height * 0.20f;
+	m_pScoreboard = new Scoreboard(partRegion, 640, 480, m_pSceneShader, m_pTextShader);
 
 	return 0;
 }
@@ -64,33 +79,31 @@ void Game::Run()
 	lastTime = 0;
 	timeLimit = glfwGetTimerFrequency() / 4;
 	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(mp_window))
+	while (!glfwWindowShouldClose(m_pWindow))
 	{
 		//Process events
 		curTime = glfwGetTimerValue();
 		if (curTime - lastTime >= timeLimit)
 		{
 			lastTime = curTime;
-			//onTimeout();
+			onTimeout();
 		}
 		glfwPollEvents();
 
 		//Game logic
-		/*
-		if (true == mp_snake->CheckCollision())
+		if (true == m_pSnake->CheckCollision())
 		{
-			glfwSetWindowShouldClose(mp_window, GLFW_TRUE);
+			glfwSetWindowShouldClose(m_pWindow, GLFW_TRUE);
 		};
 
-		if (true == mp_snake->CheckInbound(mp_food->Col(), mp_food->Row()))
+		if (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
 		{
-			mp_snake->InsertBlock();
-			while (true == mp_snake->CheckInbound(mp_food->Col(), mp_food->Row()))
+			m_pSnake->InsertBlock();
+			while (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
 			{
-				mp_food->Reset();
+				m_pFood->Reset();
 			}
 		}
-		*/
 
 		//Render
 		Render();
@@ -101,32 +114,47 @@ void Game::Run()
 
 void Game::Terminate()
 {
-	glfwDestroyWindow(mp_window);
-	mp_window = NULL;
+	glfwDestroyWindow(m_pWindow);
+	m_pWindow = NULL;
 
 	glfwTerminate();
+
+	delete m_pFood;
+	delete m_pMeshboard;
+	delete m_pSnake;
+	delete m_pScoreboard;
+
+	delete m_pSceneShader;
+	delete m_pTextShader;
 }
 
 
 void Game::WillRender()
 {
-	glfwGetFramebufferSize(mp_window, &m_width, &m_height);
+	GLuint glProjLoc;
+	glm::mat4 glmProjMat;
+
 	glViewport(0, 0, m_width, m_height);
 
-	//mp_meshboard->WillRender();
+	glmProjMat = glm::ortho(0.0f, static_cast<GLfloat>(m_width),
+		0.0f, static_cast<GLfloat>(m_height));
 
-	//mp_food->WillRender();
+	m_pSceneShader->Use();
+	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projection");
+	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
+	GL_PRINT_ERROR;
 
-	/*
-	mp_snake->WillRender();
-	*/
+	m_pTextShader->Use();
+	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projection");
+	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
 
-	mp_scoreboard->WillRender();
+	m_pMeshboard->WillRender();
+	m_pFood->WillRender();
+	m_pSnake->WillRender();
+	m_pScoreboard->WillRender();
 
-	//mp_food->Reset();
-	/*
-	mp_snake->Reset();
-	*/
+	m_pFood->Reset();
+	m_pSnake->Reset();
 }
 
 void Game::Render()
@@ -134,23 +162,20 @@ void Game::Render()
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//mp_shader->Use();
+	m_pMeshboard->Render();
+	m_pFood->Render();
+	m_pSnake->Render();
+	m_pScoreboard->Render();
 
-	//mp_meshboard->Render();
-	//mp_food->Render();
-	//mp_snake->Render();
-
-	mp_scoreboard->Render();
-
-	glfwSwapBuffers(mp_window);
+	glfwSwapBuffers(m_pWindow);
 }
 
 void Game::DidRender()
 {
-	mp_snake->DidRender();
-	mp_food->DidRender();
-	mp_meshboard->DidRender();
-	mp_scoreboard->DidRender();
+	m_pSnake->DidRender();
+	m_pFood->DidRender();
+	m_pMeshboard->DidRender();
+	m_pScoreboard->DidRender();
 }
 
 
@@ -158,16 +183,16 @@ void Game::KeyCallback(GLFWwindow* window, int key, int scancode, int action, in
 {
 	if (GLFW_PRESS == action)
 	{
-		mp_instance->onKeyDown(key);
+		m_pInstance->onKeyDown(key);
 	}
 }
 
 void Game::onKeyDown(int key)
 {
-	mp_snake->onKeyDown(key);
+	m_pSnake->onKeyDown(key);
 }
 
 void Game::onTimeout()
 {
-	mp_snake->onTimeout();
+	m_pSnake->onTimeout();
 }

@@ -1,10 +1,12 @@
 #pragma once
+
 #include "stdafx.h"
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
+struct Rectf
+{
+	float x, y, width, height;
+};
+
 
 class Shader
 {

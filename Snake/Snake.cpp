@@ -2,18 +2,18 @@
 #include "Snake.h"
 
 
-Snake::Snake(int rows, int cols, int movDirection) :
+Snake::Snake(Rectf &renderRegion, int rows, int cols, int movDirection, Shader *pShader) :
 	m_rows(rows), m_cols(cols), m_hdMovDirection(movDirection),
-	rowDistribution(0, rows), colDistribution(0, cols)
+	rowDistribution(0, rows), colDistribution(0, cols),
+	m_renderRegion(renderRegion), m_pShader(pShader)
 {
-	m_colSpacing = 2.0f / m_cols;
-	m_rowSpacing = 2.0f / m_rows;
+	m_colSpacing = m_renderRegion.width / m_cols;
+	m_rowSpacing = m_renderRegion.height / m_rows;
 }
 
 
 Snake::~Snake()
-{
-}
+{}
 
 
 void Snake::Reset()
@@ -185,14 +185,14 @@ void Snake::UpdateScene()
 		col = iter_point->first;
 		row = iter_point->second;
 
-		mp_vertexPtArr[i * 8] = col * m_colSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 1] = row * m_rowSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 2] = (col + 1) * m_colSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 3] = row * m_rowSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 4] = col * m_colSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 5] = (row + 1) * m_rowSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 6] = (col + 1) * m_colSpacing - 1.0f;
-		mp_vertexPtArr[i * 8 + 7] = (row + 1) * m_rowSpacing - 1.0f;
+		mp_vertexPtArr[i * 8] = col * m_colSpacing + m_renderRegion.x;
+		mp_vertexPtArr[i * 8 + 1] = row * m_rowSpacing + m_renderRegion.y;
+		mp_vertexPtArr[i * 8 + 2] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		mp_vertexPtArr[i * 8 + 3] = row * m_rowSpacing + m_renderRegion.y;
+		mp_vertexPtArr[i * 8 + 4] = col * m_colSpacing + m_renderRegion.x;
+		mp_vertexPtArr[i * 8 + 5] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		mp_vertexPtArr[i * 8 + 6] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		mp_vertexPtArr[i * 8 + 7] = (row + 1) * m_rowSpacing + m_renderRegion.y;
 
 		mp_vertexIdxArr[i * 6] = i * 4;
 		mp_vertexIdxArr[i * 6 + 1] = i * 4 + 1;
@@ -209,9 +209,11 @@ void Snake::WillRender()
 	mp_vertexPtArr = new float[m_cols * m_rows * 4 * 2];
 	mp_vertexIdxArr = new int[m_cols * m_rows * 6];
 
+	
 	glGenVertexArrays(1, &m_glVertexArr);
 	glGenBuffers(1, &m_glVertexBuf);
 	glGenBuffers(1, &m_glVertexIdx);
+	int err = glGetError();
 
 	glBindVertexArray(m_glVertexArr);
 
@@ -244,20 +246,26 @@ void Snake::DidRender()
 
 void Snake::Render()
 {
+	m_pShader->Use();
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glBindVertexArray(m_glVertexArr);
+	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * m_points.size() * 8, mp_vertexPtArr);
+	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(int) * m_points.size() * 6, mp_vertexIdxArr);
+	GL_PRINT_ERROR;
 
 	glDrawElements(GL_TRIANGLES, m_points.size() * 6, GL_UNSIGNED_INT, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+	GL_PRINT_ERROR;
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 }

@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "Shader.h"
 
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {

@@ -21,21 +21,20 @@ struct Character {
 class Scoreboard
 {
 private:
+	Rectf m_renderRegion;
 	int m_cols, m_rows, m_score;
-	GLfloat m_x, m_y, m_scale;
+	GLfloat m_scale;
 	glm::vec3 m_glmTextColor;
 
-	Shader *mp_shader;
+	Shader *m_pTextShader, *m_pSceneShader;
 	GLuint m_glVtxBuf, m_glVtxArr,
-		m_glColorLoc, m_glProjLoc;
-	glm::mat4 m_glmProjMat;
-
+		m_glColorLoc;
 
 
 	std::map<GLchar, Character> characters;
 
 public:
-	Scoreboard(int cols, int rows);
+	Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader);
 	~Scoreboard();
 
 	void Reset();

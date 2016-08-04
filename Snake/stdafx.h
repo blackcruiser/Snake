@@ -16,3 +16,11 @@
 
 #include <GLEW\glew.h>
 #include <GLFW\glfw3.h>
+
+
+// Definition
+#ifdef _DEBUG
+	#define GL_PRINT_ERROR printf("%s %d: %d\n", __FILE__, __LINE__, glGetError())
+#elif
+	#define GL_PRINT_ERROR 
+#endif

@@ -13,7 +13,6 @@ enum GAME_MESSAGE
 
 #include <list>
 
-#include "Shader.h"
 #include "BaseModule.h"
 #include "Food.h"
 #include "Snake.h"
@@ -23,16 +22,14 @@ enum GAME_MESSAGE
 class Game : BaseModule
 {
 private:
-	static Game *mp_instance;
+	static Game *m_pInstance;
+	Snake *m_pSnake;
+	Food *m_pFood;
+	Meshboard *m_pMeshboard;
+	Scoreboard *m_pScoreboard;
 
-	Shader *mp_shader;
-	GLFWwindow *mp_window;
-
-	Snake *mp_snake;
-	Food *mp_food;
-	Meshboard *mp_meshboard;
-	Scoreboard *mp_scoreboard;
-
+	Shader *m_pSceneShader, *m_pTextShader;
+	GLFWwindow *m_pWindow;
 	int m_width, m_height;
 
 private:

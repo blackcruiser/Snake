@@ -2,12 +2,13 @@
 #include "Food.h"
 
 
-Food::Food(int rows, int cols):
+Food::Food(Rectf &renderRegion, int rows, int cols, Shader *pShader) :
+	m_renderRegion(renderRegion), m_pShader(pShader),
 	m_cols(cols), m_rows(rows), m_col(0), m_row(0), 
 	m_colDistribution(0, cols - 1), m_rowDistribution(0, rows - 1)
 {
-	m_colSpacing = 2.0f / cols;
-	m_rowSpacing = 2.0f / rows;
+	m_colSpacing = m_renderRegion.width / cols;
+	m_rowSpacing = m_renderRegion.height / rows;
 }
 
 
@@ -30,26 +31,22 @@ void Food::Reset()
 	m_row = m_rowDistribution(m_randomEngine);
 	m_col = m_colDistribution(m_randomEngine);
 
-	m_vertexPtArr[0] = (m_col + 0.25) * m_colSpacing;
-	m_vertexPtArr[1] = (m_row + 0.25)* m_rowSpacing;
-	m_vertexPtArr[2] = (m_col + 0.75) * m_colSpacing;
-	m_vertexPtArr[3] = (m_row + 0.25) * m_rowSpacing;
-	m_vertexPtArr[4] = (m_col + 0.25) * m_colSpacing;
-	m_vertexPtArr[5] = (m_row + 0.75) * m_rowSpacing;
-	m_vertexPtArr[6] = (m_col + 0.75) * m_colSpacing;
-	m_vertexPtArr[7] = (m_row + 0.75) * m_rowSpacing;
-
-	for (int i = 0; i < 8; i++)
-		m_vertexPtArr[i] -= 1.0f;
+	m_vertexPtArr[0] = (m_col + 0.25) * m_colSpacing + m_renderRegion.x;
+	m_vertexPtArr[1] = (m_row + 0.25) * m_rowSpacing + m_renderRegion.y;
+	m_vertexPtArr[2] = (m_col + 0.75) * m_colSpacing + m_renderRegion.x;
+	m_vertexPtArr[3] = (m_row + 0.25) * m_rowSpacing + m_renderRegion.y;
+	m_vertexPtArr[4] = (m_col + 0.25) * m_colSpacing + m_renderRegion.x;
+	m_vertexPtArr[5] = (m_row + 0.75) * m_rowSpacing + m_renderRegion.y;
+	m_vertexPtArr[6] = (m_col + 0.75) * m_colSpacing + m_renderRegion.x;
+	m_vertexPtArr[7] = (m_row + 0.75) * m_rowSpacing + m_renderRegion.y;
 }
 
 void Food::WillRender()
 {
-	//glGenVertexArrays(1, &m_glVertexArr);
+	glGenVertexArrays(1, &m_glVertexArr);
 	glGenBuffers(1, &m_glVertexBuf);
-	//glGenBuffers(1, &m_glVertexIdx);
+	glGenBuffers(1, &m_glVertexIdx);
 
-	/*
 	glBindVertexArray(m_glVertexArr);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
@@ -64,10 +61,6 @@ void Food::WillRender()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	*/
-	glDeleteBuffers(0, &m_glVertexBuf);
-
-	int err = glGetError();
 }
 
 void Food::DidRender()
@@ -79,6 +72,8 @@ void Food::DidRender()
 
 void Food::Render()
 {
+	m_pShader->Use();
+
 	glBindVertexArray(m_glVertexArr);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
