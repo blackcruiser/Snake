@@ -10,7 +10,7 @@
 Game *Game::m_pInstance = NULL;
 
 Game::Game() :
-	m_pWindow(NULL), m_pFood(NULL), m_pSnake(NULL), 
+	m_pWindow(NULL), m_pFood(NULL), m_pSnake(NULL),
 	m_pMeshboard(NULL), m_pScoreboard(NULL)
 {}
 
@@ -50,8 +50,8 @@ int Game::Initialize()
 
 	glfwSetKeyCallback(m_pWindow, KeyCallback);
 
-	Rectf partRegion, fullRegion= { 0, 0, 
-		static_cast<float>(m_width), static_cast<float>(m_height)  };
+	Rectf partRegion, fullRegion = { 0, 0,
+		static_cast<float>(m_width), static_cast<float>(m_height) };
 
 	m_pSceneShader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
 	m_pTextShader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
@@ -90,22 +90,7 @@ void Game::Run()
 		}
 		glfwPollEvents();
 
-		//Game logic
-		if (true == m_pSnake->CheckCollision())
-		{
-			glfwSetWindowShouldClose(m_pWindow, GLFW_TRUE);
-		};
-
-		if (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
-		{
-			m_pSnake->InsertBlock();
-			while (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
-			{
-				m_pFood->Reset();
-			}
-		}
-
-		//Render
+		Logic();
 		Render();
 	}
 
@@ -126,6 +111,25 @@ void Game::Terminate()
 
 	delete m_pSceneShader;
 	delete m_pTextShader;
+}
+
+void Game::Logic()
+{
+	if (true == m_pSnake->CheckCollision())
+	{
+		glfwSetWindowShouldClose(m_pWindow, GLFW_TRUE);
+	};
+
+	if (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
+	{
+		m_pSnake->InsertBlock();
+
+		while (true == m_pSnake->CheckInbound(m_pFood->Col(), m_pFood->Row()))
+		{
+			m_pScoreboard->AddPoint();
+			m_pFood->Reset();
+		}
+	}
 }
 
 
@@ -155,6 +159,7 @@ void Game::WillRender()
 
 	m_pFood->Reset();
 	m_pSnake->Reset();
+	m_pScoreboard->Reset();
 }
 
 void Game::Render()

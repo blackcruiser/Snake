@@ -5,13 +5,24 @@
 
 
 Scoreboard::Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader) :
-	m_cols(cols), m_rows(rows), m_scale(1.0f),
+	m_cols(cols), m_rows(rows), m_scale(1.0f), m_score(0),
 	m_glmTextColor(0.5f, 0.8f, 0.2f), m_renderRegion(renderRegion),
-	m_pSceneShader(pSceneShader), m_pTextShader(pTextShader)
+	m_pSceneShader(pSceneShader), m_pTextShader(pTextShader),
+	m_formater("Score:%2d")
 {}
 
 Scoreboard::~Scoreboard()
 {}
+
+void Scoreboard::Reset()
+{
+	m_score = 0;
+}
+
+void Scoreboard::AddPoint()
+{
+	m_score++;
+}
 
 void Scoreboard::LoadCharacters()
 {
@@ -102,7 +113,7 @@ void Scoreboard::DidRender()
 
 void Scoreboard::Render()
 {
-	std::string text("This is sample text");
+	std::string text(boost::str(m_formater % m_score));
 	GLfloat  baseX, baseY;
 
 	m_pTextShader->Use();

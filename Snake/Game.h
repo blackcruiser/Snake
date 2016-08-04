@@ -43,6 +43,8 @@ public:
 	void Run();
 	void Terminate();
 
+	void Logic();
+
 
 	void WillRender();
 	virtual void Render();

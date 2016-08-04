@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <boost/format.hpp>
 
 #include <map>
 
@@ -30,14 +31,16 @@ private:
 	GLuint m_glVtxBuf, m_glVtxArr,
 		m_glColorLoc;
 
-
+	boost::format m_formater;
 	std::map<GLchar, Character> characters;
+
 
 public:
 	Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader);
 	~Scoreboard();
 
 	void Reset();
+	void AddPoint();
 
 	void LoadCharacters();
 
