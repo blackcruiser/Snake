@@ -4,8 +4,6 @@
 #include "Shader.h"
 
 #include <glm/glm.hpp>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <boost/format.hpp>
 
 #include <map>
@@ -23,20 +21,21 @@ class Scoreboard
 {
 private:
 	Rectf m_renderRegion;
-	int m_cols, m_rows, m_score;
+	int m_score;
 	GLfloat m_scale;
 	glm::vec3 m_glmTextColor;
+	glm::mat4 m_glmTextTransMat;
 
 	Shader *m_pTextShader, *m_pSceneShader;
 	GLuint m_glVtxBuf, m_glVtxArr,
-		m_glColorLoc;
+		m_glColorLoc, m_glTextTransMatLoc;
 
 	boost::format m_formater;
 	std::map<GLchar, Character> characters;
 
 
 public:
-	Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader);
+	Scoreboard(Rectf &renderRegion, Shader *pSceneShader, Shader *pTextShader);
 	~Scoreboard();
 
 	void Reset();

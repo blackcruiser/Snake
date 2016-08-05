@@ -9,9 +9,10 @@
 
 Game *Game::m_pInstance = NULL;
 
-Game::Game() :
+Game::Game(int width, int height, int cols, int rows) :
 	m_pWindow(NULL), m_pFood(NULL), m_pSnake(NULL),
-	m_pMeshboard(NULL), m_pScoreboard(NULL)
+	m_pMeshboard(NULL), m_pScoreboard(NULL),
+	m_width(width), m_height(height), m_cols(cols), m_rows(rows)
 {}
 
 Game::~Game()
@@ -19,18 +20,19 @@ Game::~Game()
 	m_pInstance = NULL;
 }
 
-Game* Game::GetInstance()
+Game* Game::GetInstance(int width, int height, int cols, int rows)
 {
 	if (NULL == m_pInstance)
-		m_pInstance = new Game;
-	return m_pInstance;
+		m_pInstance = new Game(width, height, cols, rows);
+	else if (width != m_pInstance->m_width || height != m_pInstance->m_height
+		|| cols != m_pInstance->m_cols || rows != m_pInstance->m_rows)
+		return new Game(width, height, cols, rows);
+	else
+		return m_pInstance;
 }
 
 int Game::Initialize()
 {
-	m_width = 640.00f;
-	m_height = 600.00f;
-
 	if (!glfwInit())
 		return -1;
 
@@ -58,14 +60,14 @@ int Game::Initialize()
 
 	partRegion = fullRegion;
 	partRegion.height *= 0.80f;
-	m_pFood = new Food(partRegion, 16, 16, m_pSceneShader);
-	m_pSnake = new Snake(partRegion, 16, 16, 0, m_pSceneShader);
-	m_pMeshboard = new Meshboard(partRegion, 16, 16, m_pSceneShader);
+	m_pFood = new Food(partRegion, m_rows, m_cols, m_pSceneShader);
+	m_pSnake = new Snake(partRegion, m_rows, m_cols, 0, m_pSceneShader);
+	m_pMeshboard = new Meshboard(partRegion, m_rows, m_cols, m_pSceneShader);
 
 	partRegion = fullRegion;
 	partRegion.y = fullRegion.height * 0.80f;
-	partRegion.height *= fullRegion.height * 0.20f;
-	m_pScoreboard = new Scoreboard(partRegion, 640, 480, m_pSceneShader, m_pTextShader);
+	partRegion.height = fullRegion.height * 0.20f;
+	m_pScoreboard = new Scoreboard(partRegion, m_pSceneShader, m_pTextShader);
 
 	return 0;
 }
@@ -143,13 +145,13 @@ void Game::WillRender()
 	glmProjMat = glm::ortho(0.0f, static_cast<GLfloat>(m_width),
 		0.0f, static_cast<GLfloat>(m_height));
 
+	glProjLoc = glGetUniformLocation(m_pSceneShader->program, "projMat");
 	m_pSceneShader->Use();
-	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projection");
 	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
 	GL_PRINT_ERROR;
 
+	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projMat");
 	m_pTextShader->Use();
-	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projection");
 	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
 
 	m_pMeshboard->WillRender();

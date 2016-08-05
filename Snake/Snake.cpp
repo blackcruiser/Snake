@@ -102,7 +102,7 @@ void Snake::InsertBlock()
 	{
 		m_points.push_back(std::make_pair(col, row));
 		m_movDirection.push_back(movDirection);
-		UpdateScene();
+		UpdateModel();
 	}
 	else
 	{
@@ -116,6 +116,10 @@ void Snake::InsertBlock()
 void Snake::move()
 {
 	int row, col;
+
+	//if moving direction is opposed to head direction
+	if (m_points.size() > 1 && 2 == (m_hdMovDirection - m_movDirection.front() + 4) % 4)
+		m_hdMovDirection = m_movDirection.front();
 
 	col = m_points.begin()->first;
 	row = m_points.begin()->second;
@@ -176,7 +180,7 @@ bool Snake::CheckInbound(int col, int row)
 }
 
 
-void Snake::UpdateScene()
+void Snake::UpdateModel()
 {
 	int col, row, i = 0;
 
@@ -185,29 +189,29 @@ void Snake::UpdateScene()
 		col = iter_point->first;
 		row = iter_point->second;
 
-		mp_vertexPtArr[i * 8] = col * m_colSpacing + m_renderRegion.x;
-		mp_vertexPtArr[i * 8 + 1] = row * m_rowSpacing + m_renderRegion.y;
-		mp_vertexPtArr[i * 8 + 2] = (col + 1) * m_colSpacing + m_renderRegion.x;
-		mp_vertexPtArr[i * 8 + 3] = row * m_rowSpacing + m_renderRegion.y;
-		mp_vertexPtArr[i * 8 + 4] = col * m_colSpacing + m_renderRegion.x;
-		mp_vertexPtArr[i * 8 + 5] = (row + 1) * m_rowSpacing + m_renderRegion.y;
-		mp_vertexPtArr[i * 8 + 6] = (col + 1) * m_colSpacing + m_renderRegion.x;
-		mp_vertexPtArr[i * 8 + 7] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 8] = col * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 8 + 1] = row * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 8 + 2] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 8 + 3] = row * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 8 + 4] = col * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 8 + 5] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 8 + 6] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 8 + 7] = (row + 1) * m_rowSpacing + m_renderRegion.y;
 
-		mp_vertexIdxArr[i * 6] = i * 4;
-		mp_vertexIdxArr[i * 6 + 1] = i * 4 + 1;
-		mp_vertexIdxArr[i * 6 + 2] = i * 4 + 2;
-		mp_vertexIdxArr[i * 6 + 3] = i * 4 + 2;
-		mp_vertexIdxArr[i * 6 + 4] = i * 4 + 3;
-		mp_vertexIdxArr[i * 6 + 5] = i * 4 + 1;
+		m_VtxIdxArr[i * 6] = i * 4;
+		m_VtxIdxArr[i * 6 + 1] = i * 4 + 1;
+		m_VtxIdxArr[i * 6 + 2] = i * 4 + 2;
+		m_VtxIdxArr[i * 6 + 3] = i * 4 + 2;
+		m_VtxIdxArr[i * 6 + 4] = i * 4 + 3;
+		m_VtxIdxArr[i * 6 + 5] = i * 4 + 1;
 	}
 }
 
 
 void Snake::WillRender()
 {
-	mp_vertexPtArr = new float[m_cols * m_rows * 4 * 2];
-	mp_vertexIdxArr = new int[m_cols * m_rows * 6];
+	m_pVtxPtArr = new float[m_cols * m_rows * 4 * 2];
+	m_VtxIdxArr = new int[m_cols * m_rows * 6];
 
 	
 	glGenVertexArrays(1, &m_glVertexArr);
@@ -240,8 +244,8 @@ void Snake::DidRender()
 	glDeleteBuffers(1, &m_glVertexIdx);
 	glDeleteBuffers(1, &m_glVertexBuf);
 
-	delete[] mp_vertexIdxArr;
-	delete[] mp_vertexPtArr;
+	delete[] m_VtxIdxArr;
+	delete[] m_pVtxPtArr;
 }
 
 void Snake::Render()
@@ -253,11 +257,11 @@ void Snake::Render()
 	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * m_points.size() * 8, mp_vertexPtArr);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * m_points.size() * 8, m_pVtxPtArr);
 	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(int) * m_points.size() * 6, mp_vertexIdxArr);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(int) * m_points.size() * 6, m_VtxIdxArr);
 	GL_PRINT_ERROR;
 
 	glDrawElements(GL_TRIANGLES, m_points.size() * 6, GL_UNSIGNED_INT, 0);
@@ -292,5 +296,5 @@ void Snake::onKeyDown(int key)
 void Snake::onTimeout()
 {
 	move();
-	UpdateScene();
+	UpdateModel();
 }

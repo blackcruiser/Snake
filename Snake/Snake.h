@@ -30,8 +30,8 @@ private:
 
 	Shader *m_pShader;
 	GLuint m_glVertexBuf, m_glVertexArr, m_glVertexIdx;
-	float *mp_vertexPtArr;
-	int *mp_vertexIdxArr;
+	float *m_pVtxPtArr;
+	int *m_VtxIdxArr;
 
 public:
 	Snake(Rectf &renderRegion, int rows, int cols, int moveDirection, Shader *pShader);
@@ -44,7 +44,7 @@ public:
 	bool CheckCollision();
 	bool CheckInbound(int col, int row);
 
-	void UpdateScene();
+	void UpdateModel();
 
 	void WillRender();
 	void DidRender();

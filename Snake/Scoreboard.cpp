@@ -1,11 +1,16 @@
 #include "stdafx.h"
 #include "Scoreboard.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include <iostream>
 
 
-Scoreboard::Scoreboard(Rectf &renderRegion, int cols, int rows, Shader *pSceneShader, Shader *pTextShader) :
-	m_cols(cols), m_rows(rows), m_scale(1.0f), m_score(0),
+Scoreboard::Scoreboard(Rectf &renderRegion, Shader *pSceneShader, Shader *pTextShader) :
+	m_scale(1.0f), m_score(0),
 	m_glmTextColor(0.5f, 0.8f, 0.2f), m_renderRegion(renderRegion),
 	m_pSceneShader(pSceneShader), m_pTextShader(pTextShader),
 	m_formater("Score:%2d")
@@ -82,6 +87,7 @@ void Scoreboard::WillRender()
 	LoadCharacters();
 
 	m_glColorLoc = glGetUniformLocation(m_pTextShader->program, "textColor");
+	m_glTextTransMatLoc = glGetUniformLocation(m_pTextShader->program, "transMat");
 	GL_PRINT_ERROR;
 
 	// Configure VAO/VBO for texture quads
@@ -114,7 +120,8 @@ void Scoreboard::DidRender()
 void Scoreboard::Render()
 {
 	std::string text(boost::str(m_formater % m_score));
-	GLfloat  baseX, baseY;
+	GLfloat  baseX, baseY, x, y, w, h;
+	Character ch;
 
 	m_pTextShader->Use();
 
@@ -122,20 +129,36 @@ void Scoreboard::Render()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUniform3f(m_glColorLoc, m_glmTextColor.x, m_glmTextColor.y, m_glmTextColor.z);
-	GL_PRINT_ERROR; 
-
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(m_glVtxArr);
 	GL_PRINT_ERROR;
 
 	baseX = m_renderRegion.x;
 	baseY = m_renderRegion.y;
+	h = 0.0f;
 	for (auto c = text.begin(); c != text.end(); c++)
 	{
-		GLfloat x, y, w, h;
-		Character ch;
+		ch = characters[*c];
 
+		x = baseX + ch.bearing.x * m_scale;
+		w = ch.size.x * m_scale;
+		h = h > ch.size.y * m_scale ? h : ch.size.y * m_scale;
+
+		baseX += (ch.advance >> 6) * m_scale; // Bitshift by 6 to get value in pixels (1/64th times 2^6 = 64)
+	}
+
+	m_glmTextTransMat = glm::translate(glm::mat4(1.0f), 
+		glm::vec3((m_renderRegion.width - (x + w - m_renderRegion.x)) / 2, 
+			(m_renderRegion.height - h )/ 2, 0.0f));
+	glUniformMatrix4fv(m_glTextTransMatLoc, 1, GL_FALSE, glm::value_ptr(m_glmTextTransMat));
+	glUniform3f(m_glColorLoc, m_glmTextColor.x, m_glmTextColor.y, m_glmTextColor.z);
+	GL_PRINT_ERROR; 
+
+	
+	baseX = m_renderRegion.x;
+	baseY = m_renderRegion.y;
+	for (auto c = text.begin(); c != text.end(); c++)
+	{
 		ch = characters[*c];
 
 		x = baseX + ch.bearing.x * m_scale;

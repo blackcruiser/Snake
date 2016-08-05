@@ -30,13 +30,13 @@ private:
 
 	Shader *m_pSceneShader, *m_pTextShader;
 	GLFWwindow *m_pWindow;
-	int m_width, m_height;
+	int m_width, m_height, m_cols, m_rows;
 
 private:
-	Game();
+	Game(int width, int height, int cols, int rows);
 
 public:
-	static Game *GetInstance();
+	static Game *GetInstance(int width, int height, int cols, int rows);
 	~Game();
 
 	int Initialize();

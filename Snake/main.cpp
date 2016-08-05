@@ -6,7 +6,7 @@
 
 int main(void)
 {
-	Game *game = Game::GetInstance();
+	Game *game = Game::GetInstance(640, 600, 20, 20);
 
 	game->Initialize();
 	game->Run();
