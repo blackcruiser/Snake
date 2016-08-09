@@ -8,7 +8,6 @@
 
 #include <iostream>
 
-
 Scoreboard::Scoreboard(Rectf &renderRegion, Shader *pSceneShader, Shader *pTextShader) :
 	m_scale(1.0f), m_score(0),
 	m_glmTextColor(0.5f, 0.8f, 0.2f), m_renderRegion(renderRegion),

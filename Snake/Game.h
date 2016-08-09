@@ -28,9 +28,10 @@ private:
 	Meshboard *m_pMeshboard;
 	Scoreboard *m_pScoreboard;
 
-	Shader *m_pSceneShader, *m_pTextShader;
+	Shader *m_pSceneShader, *m_pTextShader, *m_pSnakeShader;
 	GLFWwindow *m_pWindow;
 	int m_width, m_height, m_cols, m_rows;
+	uint64_t m_curTime, m_lastTime, m_timeLimit;
 
 private:
 	Game(int width, int height, int cols, int rows);
@@ -43,13 +44,12 @@ public:
 	void Run();
 	void Terminate();
 
-	void Logic();
-
+	void ProcessEvent();
+	void ProcessLogic();
 
 	void WillRender();
 	virtual void Render();
 	void DidRender();
-
 
 	static void KeyCallback(GLFWwindow* window, int key, 
 		int scancode, int action, int mods);

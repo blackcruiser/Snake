@@ -29,9 +29,10 @@ private:
 	std::uniform_int_distribution<int> rowDistribution, colDistribution;
 
 	Shader *m_pShader;
-	GLuint m_glVertexBuf, m_glVertexArr, m_glVertexIdx;
+	GLuint m_glVtxBuf, m_glVtxArr, m_glVtxIdxBuf, m_glTexture;
 	float *m_pVtxPtArr;
-	int *m_VtxIdxArr;
+	int *m_pVtxIdxArr;
+	bool isUpdated;
 
 public:
 	Snake(Rectf &renderRegion, int rows, int cols, int moveDirection, Shader *pShader);

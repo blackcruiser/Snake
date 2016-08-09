@@ -12,8 +12,10 @@ Game *Game::m_pInstance = NULL;
 Game::Game(int width, int height, int cols, int rows) :
 	m_pWindow(NULL), m_pFood(NULL), m_pSnake(NULL),
 	m_pMeshboard(NULL), m_pScoreboard(NULL),
-	m_width(width), m_height(height), m_cols(cols), m_rows(rows)
-{}
+	m_width(width), m_height(height), m_cols(cols), m_rows(rows),
+	m_lastTime(0), m_curTime(0)
+{
+}
 
 Game::~Game()
 {
@@ -26,9 +28,9 @@ Game* Game::GetInstance(int width, int height, int cols, int rows)
 		m_pInstance = new Game(width, height, cols, rows);
 	else if (width != m_pInstance->m_width || height != m_pInstance->m_height
 		|| cols != m_pInstance->m_cols || rows != m_pInstance->m_rows)
-		return new Game(width, height, cols, rows);
-	else
-		return m_pInstance;
+		m_pInstance  = new Game(width, height, cols, rows);
+
+	return m_pInstance;
 }
 
 int Game::Initialize()
@@ -55,13 +57,16 @@ int Game::Initialize()
 	Rectf partRegion, fullRegion = { 0, 0,
 		static_cast<float>(m_width), static_cast<float>(m_height) };
 
+	m_timeLimit = glfwGetTimerFrequency() / 4;
+
 	m_pSceneShader = new Shader("./Shader/Module.vs", "./Shader/Module.frag");
 	m_pTextShader = new Shader("./Shader/Text.vs", "./Shader/Text.frag");
+	m_pSnakeShader = new Shader("./Shader/Snake.vs", "./Shader/Snake.frag");
 
 	partRegion = fullRegion;
 	partRegion.height *= 0.80f;
 	m_pFood = new Food(partRegion, m_rows, m_cols, m_pSceneShader);
-	m_pSnake = new Snake(partRegion, m_rows, m_cols, 0, m_pSceneShader);
+	m_pSnake = new Snake(partRegion, m_rows, m_cols, 0, m_pSnakeShader);
 	m_pMeshboard = new Meshboard(partRegion, m_rows, m_cols, m_pSceneShader);
 
 	partRegion = fullRegion;
@@ -69,30 +74,21 @@ int Game::Initialize()
 	partRegion.height = fullRegion.height * 0.20f;
 	m_pScoreboard = new Scoreboard(partRegion, m_pSceneShader, m_pTextShader);
 
+	m_pFood->Reset();
+	m_pSnake->Reset();
+	m_pScoreboard->Reset();
+
 	return 0;
 }
 
 void Game::Run()
 {
-	uint64_t curTime, lastTime, timeLimit;
-
 	WillRender();
 
-	lastTime = 0;
-	timeLimit = glfwGetTimerFrequency() / 4;
-	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
-		//Process events
-		curTime = glfwGetTimerValue();
-		if (curTime - lastTime >= timeLimit)
-		{
-			lastTime = curTime;
-			onTimeout();
-		}
-		glfwPollEvents();
-
-		Logic();
+		ProcessEvent();
+		ProcessLogic();
 		Render();
 	}
 
@@ -113,9 +109,21 @@ void Game::Terminate()
 
 	delete m_pSceneShader;
 	delete m_pTextShader;
+	delete m_pSnakeShader;
 }
 
-void Game::Logic()
+void Game::ProcessEvent()
+{
+	m_curTime = glfwGetTimerValue();
+	if (m_curTime - m_lastTime >= m_timeLimit)
+	{
+		m_lastTime = m_curTime;
+		onTimeout();
+	}
+	glfwPollEvents();
+}
+
+void Game::ProcessLogic()
 {
 	if (true == m_pSnake->CheckCollision())
 	{
@@ -148,20 +156,19 @@ void Game::WillRender()
 	glProjLoc = glGetUniformLocation(m_pSceneShader->program, "projMat");
 	m_pSceneShader->Use();
 	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
-	GL_PRINT_ERROR;
 
 	glProjLoc = glGetUniformLocation(m_pTextShader->program, "projMat");
 	m_pTextShader->Use();
+	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
+
+	glProjLoc = glGetUniformLocation(m_pSnakeShader->program, "projMat");
+	m_pSnakeShader->Use();
 	glUniformMatrix4fv(glProjLoc, 1, GL_FALSE, glm::value_ptr(glmProjMat));
 
 	m_pMeshboard->WillRender();
 	m_pFood->WillRender();
 	m_pSnake->WillRender();
 	m_pScoreboard->WillRender();
-
-	m_pFood->Reset();
-	m_pSnake->Reset();
-	m_pScoreboard->Reset();
 }
 
 void Game::Render()

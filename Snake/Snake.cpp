@@ -1,11 +1,18 @@
 #include "stdafx.h"
 #include "Snake.h"
+#include "TextureManager.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include <iostream>
 
 
 Snake::Snake(Rectf &renderRegion, int rows, int cols, int movDirection, Shader *pShader) :
 	m_rows(rows), m_cols(cols), m_hdMovDirection(movDirection),
 	rowDistribution(0, rows), colDistribution(0, cols),
-	m_renderRegion(renderRegion), m_pShader(pShader)
+	m_renderRegion(renderRegion), m_pShader(pShader),
+	isUpdated(false)
 {
 	m_colSpacing = m_renderRegion.width / m_cols;
 	m_rowSpacing = m_renderRegion.height / m_rows;
@@ -13,7 +20,9 @@ Snake::Snake(Rectf &renderRegion, int rows, int cols, int movDirection, Shader *
 
 
 Snake::~Snake()
-{}
+{
+	delete m_pShader;
+}
 
 
 void Snake::Reset()
@@ -102,7 +111,7 @@ void Snake::InsertBlock()
 	{
 		m_points.push_back(std::make_pair(col, row));
 		m_movDirection.push_back(movDirection);
-		UpdateModel();
+		isUpdated = true;
 	}
 	else
 	{
@@ -144,6 +153,7 @@ void Snake::move()
 	m_movDirection.push_front(m_hdMovDirection);
 	m_points.pop_back();
 	m_movDirection.pop_back();
+	isUpdated = true;
 }
 
 
@@ -182,69 +192,96 @@ bool Snake::CheckInbound(int col, int row)
 
 void Snake::UpdateModel()
 {
-	int col, row, i = 0;
+	int col, row, idx, i = 0;
 
 	for (auto iter_point = m_points.begin(); iter_point != m_points.end(); iter_point++, i++)
 	{
 		col = iter_point->first;
 		row = iter_point->second;
+		idx = i % 35;
 
-		m_pVtxPtArr[i * 8] = col * m_colSpacing + m_renderRegion.x;
-		m_pVtxPtArr[i * 8 + 1] = row * m_rowSpacing + m_renderRegion.y;
-		m_pVtxPtArr[i * 8 + 2] = (col + 1) * m_colSpacing + m_renderRegion.x;
-		m_pVtxPtArr[i * 8 + 3] = row * m_rowSpacing + m_renderRegion.y;
-		m_pVtxPtArr[i * 8 + 4] = col * m_colSpacing + m_renderRegion.x;
-		m_pVtxPtArr[i * 8 + 5] = (row + 1) * m_rowSpacing + m_renderRegion.y;
-		m_pVtxPtArr[i * 8 + 6] = (col + 1) * m_colSpacing + m_renderRegion.x;
-		m_pVtxPtArr[i * 8 + 7] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 16] = col * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 16 + 1] = row * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 16 + 2] = (idx % 5) * 120 / 600.0f;
+		m_pVtxPtArr[i * 16 + 3] = (idx / 5) * 120 / 840.0f;
 
-		m_VtxIdxArr[i * 6] = i * 4;
-		m_VtxIdxArr[i * 6 + 1] = i * 4 + 1;
-		m_VtxIdxArr[i * 6 + 2] = i * 4 + 2;
-		m_VtxIdxArr[i * 6 + 3] = i * 4 + 2;
-		m_VtxIdxArr[i * 6 + 4] = i * 4 + 3;
-		m_VtxIdxArr[i * 6 + 5] = i * 4 + 1;
+		m_pVtxPtArr[i * 16 + 4] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 16 + 5] = row * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 16 + 6] = ((idx % 5) * 120 + 120) / 600.0f;
+		m_pVtxPtArr[i * 16 + 7] = (idx / 5) * 120 / 840.0f;
+
+		m_pVtxPtArr[i * 16 + 8] = col * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 16 + 9] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 16 + 10] = (idx % 5) * 120 / 600.0f;
+		m_pVtxPtArr[i * 16 + 11] = ((idx / 5) * 120 + 120) / 840.0f;
+
+		m_pVtxPtArr[i * 16 + 12] = (col + 1) * m_colSpacing + m_renderRegion.x;
+		m_pVtxPtArr[i * 16 + 13] = (row + 1) * m_rowSpacing + m_renderRegion.y;
+		m_pVtxPtArr[i * 16 + 14] = ((idx % 5) * 120 + 120) / 600.0f;
+		m_pVtxPtArr[i * 16 + 15] = ((idx / 5) * 120 + 120) / 840.0f;
+
+		m_pVtxIdxArr[i * 6] = i * 4;
+		m_pVtxIdxArr[i * 6 + 1] = i * 4 + 1;
+		m_pVtxIdxArr[i * 6 + 2] = i * 4 + 2;
+		m_pVtxIdxArr[i * 6 + 3] = i * 4 + 2;
+		m_pVtxIdxArr[i * 6 + 4] = i * 4 + 3;
+		m_pVtxIdxArr[i * 6 + 5] = i * 4 + 1;
 	}
 }
 
 
 void Snake::WillRender()
 {
-	m_pVtxPtArr = new float[m_cols * m_rows * 4 * 2];
-	m_VtxIdxArr = new int[m_cols * m_rows * 6];
+	m_pVtxPtArr = new float[m_cols * m_rows * 4 * 4];
+	m_pVtxIdxArr = new int[m_cols * m_rows * 6];
 
+	glActiveTexture(GL_TEXTURE0);
+	TextureManager::Inst()->LoadTexture("./texture.jpg", 0, GL_BGR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	GL_PRINT_ERROR;
 	
-	glGenVertexArrays(1, &m_glVertexArr);
-	glGenBuffers(1, &m_glVertexBuf);
-	glGenBuffers(1, &m_glVertexIdx);
-	int err = glGetError();
+	glGenVertexArrays(1, &m_glVtxArr);
+	glGenBuffers(1, &m_glVtxBuf);
+	glGenBuffers(1, &m_glVtxIdxBuf);
+	GL_PRINT_ERROR;
 
-	glBindVertexArray(m_glVertexArr);
+	glBindVertexArray(m_glVtxArr);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_rows * m_cols * 8,
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVtxBuf);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_rows * m_cols * 16,
 		0, GL_DYNAMIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVtxIdxBuf);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * m_rows * m_cols * 6,
 		0, GL_DYNAMIC_DRAW);
+	GL_PRINT_ERROR;
 
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid *)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid *)0);
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid *)(2 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	GL_PRINT_ERROR;
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+	GL_PRINT_ERROR;
 }
 
 void Snake::DidRender()
 {
-	glDeleteVertexArrays(1, &m_glVertexArr);
-	glDeleteBuffers(1, &m_glVertexIdx);
-	glDeleteBuffers(1, &m_glVertexBuf);
+	glDeleteVertexArrays(1, &m_glVtxArr);
+	glDeleteBuffers(1, &m_glVtxIdxBuf);
+	glDeleteBuffers(1, &m_glVtxBuf);
 
-	delete[] m_VtxIdxArr;
+	TextureManager::Inst()->UnloadTexture(0);
+
+	delete[] m_pVtxIdxArr;
 	delete[] m_pVtxPtArr;
 }
 
@@ -252,16 +289,25 @@ void Snake::Render()
 {
 	m_pShader->Use();
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glBindVertexArray(m_glVertexArr);
+	if (true == isUpdated)
+	{
+		UpdateModel();
+		isUpdated;
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	TextureManager::Inst()->BindTexture(0);
+	glUniform1i(glGetUniformLocation(m_pShader->program, "smpTexture"), 0);
 	GL_PRINT_ERROR;
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_glVertexBuf);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * m_points.size() * 8, m_pVtxPtArr);
+	glBindVertexArray(m_glVtxArr);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_glVtxBuf);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_points.size() * sizeof(float) * 16, m_pVtxPtArr);
 	GL_PRINT_ERROR;
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVertexIdx);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(int) * m_points.size() * 6, m_VtxIdxArr);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_glVtxIdxBuf);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, m_points.size() * sizeof(int) * 6, m_pVtxIdxArr);
 	GL_PRINT_ERROR;
 
 	glDrawElements(GL_TRIANGLES, m_points.size() * 6, GL_UNSIGNED_INT, 0);
@@ -269,9 +315,8 @@ void Snake::Render()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	GL_PRINT_ERROR;
-
-	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void Snake::onKeyDown(int key)
@@ -296,5 +341,4 @@ void Snake::onKeyDown(int key)
 void Snake::onTimeout()
 {
 	move();
-	UpdateModel();
 }
